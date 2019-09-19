@@ -99,6 +99,8 @@ class CLASSIFIER:
         return torch.clamp(dist, 0.0, np.inf)
 
     def fit_zsl(self):
+        best_ensemble_acc = 0
+        best_cls_acc = 0
         for epoch in range(self.nepoch):
             for i in range(0, self.ntrain, self.batch_size):      
                 self.model.zero_grad()
@@ -113,9 +115,19 @@ class CLASSIFIER:
                 loss.backward()
                 self.optimizer.step()
             ensemble_acc,cls_acc = self.val(self.test_unseen_feature, self.test_unseen_label, self.unseenclasses)
-        return ensemble_acc,cls_acc
+            if ensemble_acc > best_ensemble_acc:
+                best_ensemble_acc = ensemble_acc
+            if cls_acc > best_cls_acc:
+                best_cls_acc = cls_acc
+        return best_ensemble_acc,best_cls_acc
 
     def fit(self):
+        best_seen_cls = 0
+        best_unseen_cls = 0
+        best_H_cls = 0
+        best_seen_ensemble = 0
+        best_unseen_ensemble = 0
+        best_H_ensemble = 0
         for epoch in range(self.nepoch):
             for i in range(0, self.ntrain, self.batch_size):      
                 self.model.zero_grad()
@@ -143,7 +155,17 @@ class CLASSIFIER:
             else:
                 H_ensemble = 2 * seen_ensemble * unseen_ensemble / (seen_ensemble + unseen_ensemble)
 
-        return seen_cls,unseen_cls,H_cls,seen_ensemble,unseen_ensemble,H_ensemble
+            if H_ensemble > best_H_ensemble:
+                best_H_ensemble = H_ensemble
+                best_seen_ensemble = seen_ensemble
+                best_unseen_ensemble = unseen_ensemble
+            if H_cls > best_H_cls:
+                best_H_cls = H_cls
+                best_seen_cls = seen_cls
+                best_unseen_cls = unseen_cls
+
+
+        return best_seen_cls,best_unseen_cls,best_H_cls,best_seen_ensemble,best_unseen_ensemble,best_H_ensemble
                      
     def next_batch(self, batch_size):
         start = self.index_in_epoch
